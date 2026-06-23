@@ -110,7 +110,7 @@ matchers = [
         matcher = CosineSimilarity(),
         extractor = DeepFeatures(
             model = timm.create_model(
-              'hf-hub:BVRA/wildlife-mega-L-384',
+              'hf-hub:BVRA/MegaDescriptor-L-384',
               num_classes=0,
               pretrained=True
               )
@@ -142,7 +142,7 @@ priority_matcher =  SimilarityPipeline(
     matcher = CosineSimilarity(),
     extractor = DeepFeatures(
         model = timm.create_model(
-        'hf-hub:BVRA/wildlife-mega-L-384',
+        'hf-hub:BVRA/MegaDescriptor-L-384',
         num_classes=0,
         pretrained=True
         )
