@@ -1,14 +1,23 @@
+from typing import Any
+
 from copy import deepcopy
 
 import numpy as np
 import torch
-from kornia.feature.loftr.loftr import *
+from kornia.feature.loftr.backbone import build_backbone
+from kornia.feature.loftr.loftr import default_cfg, urls
+from kornia.feature.loftr.loftr_module.fine_preprocess import FinePreprocess
+from kornia.feature.loftr.loftr_module.transformer import LocalFeatureTransformer
+from kornia.feature.loftr.utils.coarse_matching import CoarseMatching
+from kornia.feature.loftr.utils.fine_matching import FineMatching
+from kornia.feature.loftr.utils.position_encoding import PositionEncodingSine
+from kornia.geometry import resize
 
 from .base import MatchPairs
 
 
 # Modified Kornia LoFTR module that enables skiping finegrained refinement
-class LoFTR(Module):
+class LoFTR(torch.nn.Module):
     r"""Module, which finds correspondences between two images.
 
     This is based on the original code from paper "LoFTR: Detector-Free Local
@@ -69,7 +78,7 @@ class LoFTR(Module):
             self.load_state_dict(pretrained_dict["state_dict"])
         self.eval()
 
-    def forward(self, data: dict[str, Tensor]) -> dict[str, Tensor]:
+    def forward(self, data: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """
         Args:
             data: dictionary containing the input data in the following format:
@@ -87,7 +96,7 @@ class LoFTR(Module):
             - ``batch_indexes``, batch indexes for the keypoints and lafs :math:`(NC)`.
         """
         # 1. Local Feature CNN
-        _data: dict[str, Tensor | int | torch.Size] = {
+        _data: dict[str, torch.Tensor | int | torch.Size] = {
             "bs": data["image0"].size(0),
             "hw0_i": data["image0"].shape[2:],
             "hw1_i": data["image1"].shape[2:],
@@ -154,10 +163,10 @@ class LoFTR(Module):
                 "mconf": "confidence",
                 "b_ids": "batch_indexes",
             }
-        out: dict[str, Tensor] = {}
+        out: dict[str, torch.Tensor] = {}
         for k, v in rename_keys.items():
             _d = _data[k]
-            if isinstance(_d, Tensor):
+            if isinstance(_d, torch.Tensor):
                 out[v] = _d
             else:
                 raise TypeError(f"Expected Tensor for item `{k}`. Gotcha {type(_d)}")
