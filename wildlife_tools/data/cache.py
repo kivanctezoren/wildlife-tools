@@ -24,6 +24,7 @@ class CacheMixin(ABC, Generic[TModel]):
         num_workers: int = 1,
         device: str | None = "cpu",
         cache_path: str | None = None,
+        skip_cache_check: bool = False,
     ):
 
         if device is None:
@@ -33,6 +34,7 @@ class CacheMixin(ABC, Generic[TModel]):
         self.num_workers = num_workers
         self.device = device
         self.cache_path = Path(cache_path) if cache_path is not None else None
+        self.skip_cache_check = skip_cache_check
 
     @abstractmethod
     def process_batch(self, batch: TBatch) -> TModel:
@@ -107,7 +109,7 @@ class FeatureCacheMixin(CacheMixin, Generic[TDict, TFeature, TModel]):
         if self.cache_path is None:
             loader = self.make_loader(dataset)
             feats = []
-            for batch in tqdm(loader, mininterval=1, ncols=100):
+            for batch in tqdm(loader, mininterval=1, ncols=100, desc='Extracting features'):
                 feats.append(self.process_batch(batch))
             return self.cat_features_model(feats)
 
@@ -115,34 +117,35 @@ class FeatureCacheMixin(CacheMixin, Generic[TDict, TFeature, TModel]):
         env = self._open_env()
         keys = [self.get_key(dataset, i) for i in range(len(dataset))]
 
-        # Determine missing entries
-        missing = []
-        with env.begin() as txn:
-            for i, k in enumerate(keys):
-                if txn.get(k.encode()) is None:
-                    missing.append(i)
+        if not self.skip_cache_check:
+            # Determine missing entries
+            missing = []
+            with env.begin() as txn:
+                for i, k in tqdm(enumerate(keys), desc='Checking missing cache'):
+                    if txn.get(k.encode()) is None:
+                        missing.append(i)
 
-        if missing:
-            # Define loader on the missing entries
-            subset = torch.utils.data.Subset(dataset, missing)
-            loader = self.make_loader(subset)
+            if missing:
+                # Define loader on the missing entries
+                subset = torch.utils.data.Subset(dataset, missing)
+                loader = self.make_loader(subset)
 
-            # Load the missing entries
-            ptr = 0
-            for batch in tqdm(loader, mininterval=1, ncols=100):
-                feats = self.forward_batch(batch)
+                # Load the missing entries
+                ptr = 0
+                for batch in tqdm(loader, mininterval=1, ncols=100, desc=f'Loading {len(subset)} missing entries'):
+                    feats = self.forward_batch(batch)
 
-                # Write the batch
-                with env.begin(write=True) as txn:
-                    for j in range(len(feats)):
-                        key = keys[missing[ptr]].encode()
-                        self._save_entry(txn, key, feats[j])
-                        ptr += 1
+                    # Write the batch
+                    with env.begin(write=True) as txn:
+                        for j in range(len(feats)):
+                            key = keys[missing[ptr]].encode()
+                            self._save_entry(txn, key, feats[j])
+                            ptr += 1
 
         # Read all features back in order
         outputs = []
         with env.begin() as txn:
-            for k in keys:
+            for k in tqdm(keys, desc='Reading cache'):
                 val = txn.get(k.encode())
                 outputs.append(pickle.loads(val))
 

@@ -17,6 +17,7 @@ class DeepFeatures(FeatureCacheMixin):
         num_workers: int = 1,
         device: str = "cpu",
         cache_path: str | None = None,
+        skip_cache_check: bool = False,
     ):
         """
         Args:
@@ -32,6 +33,7 @@ class DeepFeatures(FeatureCacheMixin):
             num_workers=num_workers,
             device=device,
             cache_path=cache_path,
+            skip_cache_check=skip_cache_check,
         )
         self.model = model
 
