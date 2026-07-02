@@ -94,7 +94,7 @@ class IsotonicCalibration:
         Returns:
             calibrated_scores (np.ndarray): Calibrated scores.
         """
-        x = np.float64(scores)
+        x = scores.astype(np.float64)
 
         if self.interpolate:
             y = self.spline(x)
