@@ -120,18 +120,38 @@ class MatchPairs:
 
         dataset_pairs = PairDataset(dataset0, dataset1, pairs=pairs)
 
-        loader_length = int(np.ceil(len(dataset_pairs) / self.batch_size))
-        loader = torch.utils.data.DataLoader(
-            dataset_pairs,
-            num_workers=self.num_workers,
-            batch_size=self.batch_size,
-            shuffle=False,
-        )
-
         self.collector.init_store(grid_shape=dataset_pairs.grid_shape)
-        for batch in tqdm(loader, total=loader_length, **self.tqdm_kwargs):
-            matches = self.get_matches(batch)
-            self.collector.add(matches)
+
+        if self.cache_path is None:
+            loader_length = int(np.ceil(len(dataset_pairs) / self.batch_size))
+            loader = torch.utils.data.DataLoader(
+                dataset_pairs,
+                num_workers=self.num_workers,
+                batch_size=self.batch_size,
+                shuffle=False,
+            )
+            
+            msg = f'Loading {len(dataset_pairs)} pairs ({self.__class__.__name__})'
+            # Compute from scratch
+            for batch in tqdm(loader, total=loader_length, desc=msg, **self.tqdm_kwargs):
+                matches = self.get_matches(batch)
+                self.collector.add(matches)
+        else:
+            raise NotImplementedError
+        
+            # Load the cache
+            Path(self.cache_path).mkdir(parents=True, exist_ok=True)
+            env = lmdb.open(
+                str(self.cache_path),
+                map_size=1 << 40,
+                subdir=True,
+                lock=True,
+                readahead=False,
+                meminit=False,
+            )
+            # FIXME: Cannot retrieve keys when `pairs` is passed since it is decoupled from datasets' metadata
+            #   Needs refactoring
+            keys = ...
 
         results = self.collector.process_results()
         return results
