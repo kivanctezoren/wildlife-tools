@@ -1,4 +1,5 @@
 import itertools
+from typing import Optional
 
 import numpy as np
 import torch
@@ -82,6 +83,8 @@ class MatchPairs:
         num_workers: int = 0,
         tqdm_silent: bool = False,
         collector: CollectCounts = None,
+        cache_path: Optional[str] = None,
+        skip_cache_check: bool = False
     ):
         """
         Args:
@@ -97,6 +100,8 @@ class MatchPairs:
         self.collector = collector
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.cache_path = cache_path
+        self.skip_cache_check = skip_cache_check
         self.tqdm_kwargs = {"mininterval": 1, "ncols": 100, "disable": tqdm_silent}
 
     def __call__(
