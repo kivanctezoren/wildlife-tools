@@ -46,7 +46,7 @@ class IsotonicCalibration:
     to ensure that the calibration curve is strictly increasing, which is necessary for ranking.
     """
 
-    def __init__(self, interpolate: bool = True, strict: bool = True):
+    def __init__(self, interpolate: bool = True, strict: bool = True, high_precision: bool = True):
         """
         Args:
             interpolate (bool): If True, use spline interpolation for calibration.
@@ -61,6 +61,8 @@ class IsotonicCalibration:
         self.x_max = None
         self.y_min = None
         self.y_max = None
+        self.high_precision = high_precision
+
 
     def fit(self, scores: np.ndarray, hits: np.ndarray):
         """Fit the isotonic regression model to calibrate the scores.
@@ -94,7 +96,10 @@ class IsotonicCalibration:
         Returns:
             calibrated_scores (np.ndarray): Calibrated scores.
         """
-        x = scores.astype(np.float64)
+        if self.high_precision:
+            x = scores.astype(np.float64)
+        else:
+            x = scores.astype(np.float32)
 
         if self.interpolate:
             y = self.spline(x)
@@ -104,8 +109,10 @@ class IsotonicCalibration:
             y = self.calibration.predict(x)
 
         if self.strict:
-            y = y + x * np.finfo(np.float64).eps
+            y = y + x * np.finfo(np.float64 if self.high_precision else np.float32).eps
+
         return y
+
 
 
 def reliability_diagram(
