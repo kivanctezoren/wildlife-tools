@@ -9,8 +9,6 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
 
-
-
 class Calibration(ABC):
     """Abstract base class for calibration methods."""
 
@@ -144,7 +142,6 @@ class IsotonicCalibration(Calibration):
             y = y + x * np.finfo(np.float64 if self.high_precision else np.float32).eps
 
         return y
-
 
 
 def reliability_diagram(
