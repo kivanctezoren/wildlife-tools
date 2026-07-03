@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +9,37 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 
 
-class LogisticCalibration:
+
+
+class Calibration(ABC):
+    """Abstract base class for calibration methods."""
+
+    @abstractmethod
+    def fit(self, scores: np.ndarray, hits: np.ndarray):
+        """
+        Fit the calibration model.
+
+        Args:
+            scores (np.ndarray): Raw uncalibrated scores.
+            hits (np.ndarray): Ground truth binary labels.
+        """
+        pass
+
+    @abstractmethod
+    def predict(self, scores: np.ndarray) -> np.ndarray:
+        """
+        Predict calibrated scores.
+
+        Args:
+            scores (np.ndarray): Raw uncalibrated scores.
+
+        Returns:
+            np.ndarray: Calibrated scores.
+        """
+        pass
+
+
+class LogisticCalibration(Calibration):
     """Performs logistic regression calibration."""
 
     def __init__(self):
@@ -38,7 +70,7 @@ class LogisticCalibration:
         return self.model.predict_proba(np.atleast_2d(scores).T)[:, 1]
 
 
-class IsotonicCalibration:
+class IsotonicCalibration(Calibration):
     """
     Performs isotonic regression calibration for ranking.
 
