@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 
-def visualise_matches(img0: Image, keypoints0: np.ndarray, img1: Image, keypoints1: list, ax=None):
+def visualise_matches(img0: Image.Image, keypoints0: np.ndarray, img1: Image.Image, keypoints1: list, ax=None):
     """
     Visualise matches between two images.
 
