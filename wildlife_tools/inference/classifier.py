@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import torch
 
-
 class KnnClassifier:
     """
     Predict query label as k labels of nearest matches in the database.
@@ -91,7 +90,7 @@ class TopkClassifier:
         self.database_labels = database_labels
         self.return_all = return_all
 
-    def __call__(self, similarity: np.ndarray) -> np.ndarray | tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def __call__(self, similarity: np.ndarray, work_in_chunks = 0) -> np.ndarray | tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Predicts the top k labels for each query based on the similarity matrix.
 
@@ -112,28 +111,66 @@ class TopkClassifier:
 
         # Get ranked predictions, scores, and database index.
         similarity = torch.tensor(similarity, dtype=torch.float32)
-        scores, idx = similarity.topk(k=similarity.shape[1], dim=1)
-        preds = self.database_labels[idx]
+        preds, scores, idx = None, None, None
+        if work_in_chunks == 0:
+            scores, idx = similarity.topk(k=similarity.shape[1], dim=1)
+            preds = self.database_labels[idx]
 
-        preds = np.array(preds)
-        scores = scores.numpy()
-        idx = idx.numpy()
+            preds = np.array(preds) #preds should already be a np array; in my tests this line can kill the process
+            scores = scores.numpy()
+            idx = idx.numpy()
 
-        # Collect data for first label occurrence
-        data = []
-        for j, row in enumerate(preds):
-            data_row = []
-            visited = set()
-            for i, value in enumerate(row):
-                if value not in visited:
-                    visited.add(value)
-                    data_row.append((value, scores[j, i], idx[j, i]))
-            data.append(list(zip(*data_row)))
+            # Collect data for first label occurrence
+            data = []
+            for j, row in enumerate(preds):
+                data_row = []
+                visited = set()
+                for i, value in enumerate(row):
+                    if value not in visited:
+                        visited.add(value)
+                        data_row.append((value, scores[j, i], idx[j, i]))
+                data.append(list(zip(*data_row)))
 
-        preds, scores, idx = list(zip(*data))
-        preds = np.array(preds)[:, : self.k]
-        scores = np.array(scores)[:, : self.k]
-        idx = np.array(idx)[:, : self.k]
+            preds, scores, idx = list(zip(*data))
+            preds = np.array(preds)[:, : self.k]
+            scores = np.array(scores)[:, : self.k]
+            idx = np.array(idx)[:, : self.k]
+        else:
+            scores = np.zeros((similarity.shape[0], self.k), dtype=np.float32)
+            idx = np.zeros((similarity.shape[0], self.k), dtype=np.int64)
+            preds = np.zeros((similarity.shape[0], self.k), dtype=object)
+            
+            for l in range(similarity.shape[0] // work_in_chunks + 1):
+                index_begin = l * work_in_chunks
+                index_end = (l + 1) * work_in_chunks
+                index_end = index_end if index_end < similarity.shape[0] else similarity.shape[0]
+
+                tmp_scores, tmp_idx = similarity[index_begin : index_end].topk(k=similarity.shape[1], dim=1)
+                tmp_preds = self.database_labels[tmp_idx]
+
+                tmp_preds = np.array(tmp_preds) #preds should already be a np array; in my tests this line can kill the process
+                tmp_scores = tmp_scores.numpy()
+                tmp_idx = tmp_idx.numpy()
+
+                # Collect data for first label occurrence
+                data = []
+                for j, row in enumerate(tmp_preds):
+                    data_row = []
+                    visited = set()
+                    for i, value in enumerate(row):
+                        if value not in visited:
+                            visited.add(value)
+                            data_row.append((value, tmp_scores[j, i], tmp_idx[j, i]))
+                    data.append(list(zip(*data_row)))
+
+                tmp_preds, tmp_scores, tmp_idx = list(zip(*data))
+                tmp_preds = np.array(tmp_preds)[:, : self.k]
+                tmp_scores = np.array(tmp_scores)[:, : self.k]
+                tmp_idx = np.array(tmp_idx)[:, : self.k]
+
+                scores[index_begin : index_end] = tmp_scores
+                idx[index_begin : index_end] = tmp_idx
+                preds[index_begin : index_end] = tmp_preds
 
         if self.return_all:
             return preds, scores, idx
