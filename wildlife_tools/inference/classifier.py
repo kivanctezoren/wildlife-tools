@@ -129,6 +129,8 @@ class TopkClassifier:
                     if value not in visited:
                         visited.add(value)
                         data_row.append((value, scores[j, i], idx[j, i]))
+                    if len(visited) >= self.k:
+                        break
                 data.append(list(zip(*data_row)))
 
             preds, scores, idx = list(zip(*data))
@@ -161,6 +163,8 @@ class TopkClassifier:
                         if value not in visited:
                             visited.add(value)
                             data_row.append((value, tmp_scores[j, i], tmp_idx[j, i]))
+                        if len(visited) >= self.k:
+                            break
                     data.append(list(zip(*data_row)))
 
                 tmp_preds, tmp_scores, tmp_idx = list(zip(*data))
