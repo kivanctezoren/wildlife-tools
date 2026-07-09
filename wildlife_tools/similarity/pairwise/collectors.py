@@ -119,8 +119,16 @@ class CollectCountsRansac(CollectCounts):
             if (len(kpts0) < 8) or (len(kpts1) < 8):  # findFundamentalMat needs 8 + samples
                 score = 0
             else:
-                F, mask = cv2.findFundamentalMat(kpts0, kpts1, **self.config)
-                score = np.sum(mask == 1)
+                try:
+                    F, mask = cv2.findFundamentalMat(kpts0, kpts1, **self.config)
+                except cv2.error as e:
+                    print(f"OpenCV error: {e}")
+                    score = 0
+                else:
+                    if mask is None:
+                        score = 0
+                    else:
+                        score = np.sum(mask == 1)
 
             if self.grid_shape is not None:
                 self.data["score"][i0, i1] = score
