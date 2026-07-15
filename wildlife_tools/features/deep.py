@@ -5,6 +5,11 @@ from transformers import CLIPModel, CLIPProcessor
 from ..data import FeatureCacheMixin
 
 
+def collate_fn(batch):
+    images, labels = zip(*batch)  # tuple of PIL images
+    return list(images), labels
+
+
 class DeepFeatures(FeatureCacheMixin):
     """
     Extracts features using forward pass of pytorch model.
@@ -106,4 +111,41 @@ class ClipFeatures(FeatureCacheMixin):
             num_workers=self.num_workers,
             shuffle=False,
             collate_fn=lambda x: x,
+        )
+
+
+class DinoFeatures(DeepFeatures):
+    def __init__(
+        self,
+        model,
+        processor,
+        batch_size: int = 128,
+        num_workers: int = 1,
+        device: str = "cpu",
+        cache_path: str | None = None,
+    ):
+
+        super().__init__(
+            model,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            device=device,
+            cache_path=cache_path,
+        )
+
+        self.processor = processor
+        self.transform = lambda x: processor(images=x, return_tensors="pt")["pixel_values"]
+
+    def forward_batch(self, batch):
+        with torch.no_grad():
+            images, _ = batch
+            return self.model(self.transform(images).to(self.device)).pooler_output.cpu()
+
+    def make_loader(self, dataset):
+        return torch.utils.data.DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
+            collate_fn=collate_fn,
         )
