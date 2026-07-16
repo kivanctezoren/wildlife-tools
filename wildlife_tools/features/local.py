@@ -47,24 +47,16 @@ class GlueFactoryExtractor(FeatureCacheMixin):
         self.model = get_model(config.name)(config)
 
     def _save_entry(self, txn: lmdb.Transaction, key: bytes, entry) -> None:
-        if "scales" in entry and "oris" in entry:
-            entry = {
-                "keypoints": entry["keypoints"].clone().cpu(),
-                "keypoint_scores": entry["keypoint_scores"].clone().cpu(),
-                "descriptors": entry["descriptors"].clone().cpu(),
-                "scales": entry["scales"].clone().cpu(),
-                "oris": entry["oris"].clone().cpu(),
-                "image_size": entry["image_size"].clone().cpu(),
-            }
-        else:
-            entry = {
-                "keypoints": entry["keypoints"].clone().cpu(),
-                "keypoint_scores": entry["keypoint_scores"].clone().cpu(),
-                "descriptors": entry["descriptors"].clone().cpu(),
-                "image_size": entry["image_size"].clone().cpu(),
-            }
-        
+        entry = self._extract_entry(entry)
         super()._save_entry(txn, key, entry)
+
+    def _extract_entry(self, entry):
+        return {
+            "keypoints": entry["keypoints"].clone().cpu(),
+            "keypoint_scores": entry["keypoint_scores"].clone().cpu(),
+            "descriptors": entry["descriptors"].clone().cpu(),
+            "image_size": entry["image_size"].clone().cpu(),
+        }
 
     def cat_features_dictionary(self, feats: list[dict]) -> list[dict]:
         return feats
@@ -188,3 +180,9 @@ class SiftExtractor(GlueFactoryExtractor):
 
         # Fix extract_single_image method.
         self.model.extract_single_image = types.MethodType(extract_single_image_fix, self.model)
+
+    def _extract_entry(self, entry):
+        entry_new = super()._extract_entry(entry)
+        entry_new["scales"] = entry["scales"].clone().cpu()
+        entry_new["oris"] = entry["oris"].clone().cpu()
+        return entry_new
