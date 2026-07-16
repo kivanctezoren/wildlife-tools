@@ -108,7 +108,8 @@ class TopkClassifier:
                 - scores (np.ndarray): The similarity scores corresponding to the top k predictions.
                 - idx (np.ndarray): The indices of the database entries corresponding to the top k predictions.
         """
-        assert len(np.unique(self.database_labels)) < self.k, "This configuration could not be evaluated since the gallery does not contain enough classes."
+        assert len(np.unique(self.database_labels)) >= self.k, "This configuration could not be evaluated since the" \
+            " gallery does not contain enough classes."
 
 
         # Get ranked predictions, scores, and database index.
