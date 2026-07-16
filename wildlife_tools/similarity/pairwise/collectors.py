@@ -1,7 +1,11 @@
+import logging
 from typing import Any
 
 import cv2
 import numpy as np
+
+
+logger = logging.getLogger(__name__)
 
 
 class CollectAll:
@@ -122,7 +126,7 @@ class CollectCountsRansac(CollectCounts):
                 try:
                     F, mask = cv2.findFundamentalMat(kpts0, kpts1, **self.config)
                 except cv2.error as e:
-                    print(f"OpenCV error: {e}")
+                    logger.error(f"OpenCV error for pair ({i0}, {i1}):\n{e}")
                     score = 0
                 else:
                     if mask is None:
