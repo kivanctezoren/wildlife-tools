@@ -20,8 +20,9 @@ def test_dino_features(dataset, extractor_dino):
 def check_sift_features(features0, features1):
     assert len(features0) == len(features1)
     for f1, f2 in zip(features0, features1):
-        np.array_equal(f1["descriptors"], f2["descriptors"])
-
+        assert f1.keys() == f2.keys()
+        for key in f1:
+            assert np.array_equal(f1[key], f2[key])
 
 def test_features_deep(dataset_deep, extractor):
     output = extractor(dataset_deep)
