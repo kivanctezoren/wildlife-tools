@@ -45,6 +45,12 @@ dependencies=[
           'gluefactory @ git+https://github.com/cvg/glue-factory.git@1f56839db2242929960d70f85bfac6c19ef2821c',
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.11",
+]
+
 [project.urls]
 "Homepage" = "https://github.com/WildlifeDatasets/wildlife-tools"
 "Documentation" = "https://wildlifedatasets.github.io/wildlife-tools/"
