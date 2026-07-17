@@ -15,6 +15,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface/hub
+          key: huggingface-hub-${{ hashFiles('tests/conftest.py') }}
+          restore-keys: |
+            huggingface-hub-
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
