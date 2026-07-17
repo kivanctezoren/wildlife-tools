@@ -5,6 +5,18 @@ from wildlife_tools.data import FeatureDataset
 from wildlife_tools.features import DataToMemory
 
 
+def test_clip_features(dataset, extractor_clip):
+    output = extractor_clip(dataset)
+    assert isinstance(output, FeatureDataset)
+    assert len(output) == len(dataset)
+
+
+def test_dino_features(dataset, extractor_dino):
+    output = extractor_dino(dataset)
+    assert isinstance(output, FeatureDataset)
+    assert len(output) == len(dataset)
+
+
 def check_sift_features(features0, features1):
     assert len(features0) == len(features1)
     for f1, f2 in zip(features0, features1):
