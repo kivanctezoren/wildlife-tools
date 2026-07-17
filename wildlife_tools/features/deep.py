@@ -5,6 +5,11 @@ from transformers import CLIPModel, CLIPProcessor
 from ..data import FeatureCacheMixin
 
 
+def collate_fn(batch):
+    images, labels = zip(*batch)  # tuple of PIL images
+    return list(images), labels
+
+
 class DeepFeatures(FeatureCacheMixin):
     """
     Extracts features using forward pass of pytorch model.
@@ -47,7 +52,7 @@ class DeepFeatures(FeatureCacheMixin):
             return self.model(images.to(self.device)).cpu()
 
 
-class ClipFeatures(FeatureCacheMixin):
+class ClipFeatures(DeepFeatures):
     """
     Extract features using CLIP model (https://arxiv.org/pdf/2103.00020.pdf).
     Uses raw images of input ImageDataset (i.e. dataset.transform = None)
@@ -71,28 +76,21 @@ class ClipFeatures(FeatureCacheMixin):
             device (str, optional): Select between cuda and cpu devices.
             cache_path (str, optional): Path for cached results. No caching for None.
         """
-
-        super().__init__(
-            batch_size=batch_size,
-            num_workers=num_workers,
-            device=device,
-            cache_path=cache_path,
-        )
         if model is None:
             model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14").vision_model
 
         if processor is None:
             processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
 
-        self.model = model
+        super().__init__(
+            model,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            device=device,
+            cache_path=cache_path,
+        )
         self.processor = processor
         self.transform = lambda x: processor(images=x, return_tensors="pt")["pixel_values"]
-
-    def cat_features_dictionary(self, feats):
-        return np.stack(feats, axis=0)
-
-    def cat_features_model(self, feats):
-        return torch.cat(feats).numpy()
 
     def forward_batch(self, batch):
         with torch.no_grad():
@@ -105,5 +103,42 @@ class ClipFeatures(FeatureCacheMixin):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False,
-            collate_fn=lambda x: x,
+            collate_fn=collate_fn,
+        )
+
+
+class DinoFeatures(DeepFeatures):
+    def __init__(
+        self,
+        model,
+        processor,
+        batch_size: int = 128,
+        num_workers: int = 1,
+        device: str = "cpu",
+        cache_path: str | None = None,
+    ):
+
+        super().__init__(
+            model,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            device=device,
+            cache_path=cache_path,
+        )
+
+        self.processor = processor
+        self.transform = lambda x: processor(images=x, return_tensors="pt")["pixel_values"]
+
+    def forward_batch(self, batch):
+        with torch.no_grad():
+            images, _ = batch
+            return self.model(self.transform(images).to(self.device)).pooler_output.cpu()
+
+    def make_loader(self, dataset):
+        return torch.utils.data.DataLoader(
+            dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=False,
+            collate_fn=collate_fn,
         )
