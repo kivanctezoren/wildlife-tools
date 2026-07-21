@@ -1,10 +1,7 @@
-name: Code Quality
+name: Ruff
 
 on:
-  push:
-    branches:
-      - main  
-  pull_request:
+  workflow_call:
 
 jobs:
   ruff:
@@ -21,4 +18,4 @@ jobs:
         run: ruff check .
 
       - name: Ruff format check
-        run: ruff format . --check
+        run: ruff format wildlife_tools .github --check

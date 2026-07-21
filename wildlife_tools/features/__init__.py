@@ -1,3 +1,3 @@
-from .deep import ClipFeatures, DeepFeatures
+from .deep import ClipFeatures, DeepFeatures, DinoFeatures
 from .local import AlikedExtractor, DiskExtractor, SiftExtractor, SuperPointExtractor
 from .memory import DataToMemory
