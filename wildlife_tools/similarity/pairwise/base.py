@@ -1,12 +1,18 @@
 import itertools
+import logging
+from pprint import pformat
 from typing import Optional
 
+import cv2
 import numpy as np
 import torch
 from tqdm import tqdm
 
 from ...data import FeatureDataset
-from .collectors import CollectCounts
+from .collectors import CollectCounts, EmptyModelError
+
+
+logger = logging.getLogger(__name__)
 
 
 class PairDataset(torch.utils.data.IterableDataset):
@@ -138,11 +144,24 @@ class MatchPairs:
             
             msg = f'Loading {len(dataset_pairs)} pairs ({self.__class__.__name__})'
             # Compute from scratch
+            empty_model_pairs = []
+            error_info = ""
             for batch in tqdm(loader, total=loader_length, desc=msg, **self.tqdm_kwargs):
                 matches = self.get_matches(batch)
-                self.collector.add(matches)
+                try:
+                    self.collector.add(matches)
+                except EmptyModelError as e:
+                    empty_model_pairs.extend(e.pairs)
+                    if not error_info:
+                        error_info = str(e)
+            else:
+                if empty_model_pairs:
+                    logger.error(
+                        f"OpenCV error for pairs {pformat(empty_model_pairs)}:\n{error_info}"
+                    )
         else:
             raise NotImplementedError
+            # TODO remove incomplete cache implementation? Caching pairs is speed efficient but very memory inefficient
         
             # Load the cache
             Path(self.cache_path).mkdir(parents=True, exist_ok=True)

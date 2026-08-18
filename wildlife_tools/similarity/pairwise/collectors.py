@@ -1,4 +1,5 @@
 import logging
+from pprint import pformat
 from typing import Any
 
 import cv2
@@ -76,6 +77,15 @@ class CollectCounts:
             return self.data
 
 
+class EmptyModelError(Exception):
+    """Custom exception for OpenCV errors related to empty models.
+    Separate class for non-intrusive handling of a common exception from OpenCV's findFundamentalMat function.
+    """
+    def __init__(self, message: str, pairs: list[tuple[int, int]]):
+        super().__init__(message)
+        self.pairs = pairs
+
+
 class CollectCountsRansac(CollectCounts):
     """
     Collect count of RANSAC inliers of fundamental matrix estimate.
@@ -117,6 +127,8 @@ class CollectCountsRansac(CollectCounts):
             self.data = {"idx0": [], "idx1": [], "score": []}
 
     def add(self, results_list: dict):
+        empty_model_pairs = []
+        error_info = ""
         for item in results_list:
             i0, i1, kpts0, kpts1 = item["idx0"], item["idx1"], item["kpts0"], item["kpts1"]
 
@@ -126,7 +138,13 @@ class CollectCountsRansac(CollectCounts):
                 try:
                     F, mask = cv2.findFundamentalMat(kpts0, kpts1, **self.config)
                 except cv2.error as e:
-                    logger.error(f"OpenCV error for pair ({i0}, {i1}):\n{e}")
+                    #logger.error(f"OpenCV error for pair ({i0}, {i1}):\n{e}")
+                    if "(-215:Assertion failed) !model.empty() in function 'setModelParameters'" in str(e):
+                        empty_model_pairs.append((i0, i1))
+                        if not error_info:
+                            error_info = str(e)
+                    else:
+                        logger.warning(f"OpenCV error for pair ({i0}, {i1}):\n{e}")
                     score = 0
                 else:
                     if mask is None:
@@ -140,3 +158,12 @@ class CollectCountsRansac(CollectCounts):
                 self.data["idx0"].append(i0)
                 self.data["idx1"].append(i1)
                 self.data["score"].append(score)
+        
+        if empty_model_pairs:
+            # logger.error(
+            #     f"OpenCV error for pairs: {pformat(empty_model_pairs)}\n" \
+            #     f"{error_info}"
+            # )
+            raise EmptyModelError(
+                f"{error_info}", empty_model_pairs
+            )
