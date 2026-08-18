@@ -33,7 +33,7 @@ class DeepFeatures(FeatureCacheMixin):
             num_workers=num_workers,
             device=device,
             cache_path=cache_path,
-            skip_cache_check=skip_cache_check,
+            skip_cache_check=skip_cache_check
         )
         self.model = model
 
@@ -63,6 +63,7 @@ class ClipFeatures(FeatureCacheMixin):
         num_workers: int = 1,
         device: str = "cpu",
         cache_path: str | None = None,
+        skip_cache_check: bool = False
     ):
         """
         Args:
@@ -72,6 +73,7 @@ class ClipFeatures(FeatureCacheMixin):
             num_workers (int, optional): Number of workers used for data loading.
             device (str, optional): Select between cuda and cpu devices.
             cache_path (str, optional): Path for cached results. No caching for None.
+            skip_cache_check (bool, optional): Whether to skip cache check.
         """
 
         super().__init__(
@@ -79,6 +81,7 @@ class ClipFeatures(FeatureCacheMixin):
             num_workers=num_workers,
             device=device,
             cache_path=cache_path,
+            skip_cache_check=skip_cache_check
         )
         if model is None:
             model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14").vision_model
