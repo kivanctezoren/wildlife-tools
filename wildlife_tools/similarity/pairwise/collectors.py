@@ -144,7 +144,7 @@ class CollectCountsRansac(CollectCounts):
                         if not error_info:
                             error_info = str(e)
                     else:
-                        logger.warning(f"OpenCV error for pair ({i0}, {i1}):\n{e}")
+                        logger.error(f"OpenCV error for pair ({i0}, {i1}):\n{e}")
                     score = 0
                 else:
                     if mask is None:

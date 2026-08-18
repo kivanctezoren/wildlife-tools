@@ -156,7 +156,7 @@ class MatchPairs:
                         error_info = str(e)
             else:
                 if empty_model_pairs:
-                    logger.error(
+                    logger.warning(
                         f"OpenCV error for pairs {pformat(empty_model_pairs)}:\n{error_info}"
                     )
         else:
