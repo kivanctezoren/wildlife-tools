@@ -101,6 +101,7 @@ class SuperPointExtractor(GlueFactoryExtractor):
         device: str | None = None,
         cache_path: str | None = None,
         skip_cache_check: bool = False,
+        num_workers: int = 1,
         **model_config,
     ):
         config = {
@@ -110,7 +111,8 @@ class SuperPointExtractor(GlueFactoryExtractor):
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check)
+        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
+                         num_workers=num_workers)
 
 
 class DiskExtractor(GlueFactoryExtractor):
@@ -129,6 +131,7 @@ class DiskExtractor(GlueFactoryExtractor):
         device: str | None = None,
         cache_path: str | None = None,
         skip_cache_check: bool = False,
+        num_workers: int = 1,
         **model_config,
     ):
         config = {
@@ -137,7 +140,8 @@ class DiskExtractor(GlueFactoryExtractor):
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check)
+        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
+                         num_workers=num_workers)
 
 
 class AlikedExtractor(GlueFactoryExtractor):
@@ -156,6 +160,7 @@ class AlikedExtractor(GlueFactoryExtractor):
         device: str | None = None,
         cache_path: str | None = None,
         skip_cache_check: bool = False,
+        num_workers: int = 1,
         **model_config,
     ):
 
@@ -165,7 +170,8 @@ class AlikedExtractor(GlueFactoryExtractor):
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check)
+        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
+                         num_workers=num_workers)
 
 
 class SiftExtractor(GlueFactoryExtractor):
@@ -180,6 +186,7 @@ class SiftExtractor(GlueFactoryExtractor):
         device: str | None = None,
         cache_path: str | None = None,
         skip_cache_check: bool = False,
+        num_workers: int = 1,
         **model_config,
     ):
 
@@ -190,7 +197,7 @@ class SiftExtractor(GlueFactoryExtractor):
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, cache_path=cache_path, device=device, skip_cache_check=skip_cache_check)
+        super().__init__(config, cache_path=cache_path, device=device, skip_cache_check=skip_cache_check, num_workers=num_workers)
 
         # Fix extract_single_image method.
         self.model.extract_single_image = types.MethodType(extract_single_image_fix, self.model)

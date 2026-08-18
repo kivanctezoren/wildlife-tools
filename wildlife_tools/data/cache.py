@@ -1,6 +1,7 @@
 import pickle
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Generic, TypeVar
 
@@ -119,11 +120,34 @@ class FeatureCacheMixin(CacheMixin, Generic[TDict, TFeature, TModel]):
 
         if not self.skip_cache_check:
             # Determine missing entries
-            missing = []
-            with env.begin() as txn:
-                for i, k in tqdm(enumerate(keys), desc='Checking missing cache'):
-                    if txn.get(k.encode()) is None:
-                        missing.append(i)
+            num_checkers = max(1, min(max(self.num_workers, 1), len(keys)))
+            if num_checkers == 1:
+                missing = []
+                with env.begin() as txn:
+                    for i, k in tqdm(enumerate(keys), desc='Checking missing cache'):
+                        if txn.get(k.encode()) is None:
+                            missing.append(i)
+            else:
+                chunk_size = (len(keys) + num_checkers - 1) // num_checkers
+                chunks = [
+                    range(i, min(i + chunk_size, len(keys)))
+                    for i in range(0, len(keys), chunk_size)
+                ]
+
+                def find_missing(indices: range) -> list[int]:
+                    with env.begin() as txn:
+                        return [
+                            i for i in indices
+                            if txn.get(keys[i].encode()) is None
+                        ]
+
+                with ThreadPoolExecutor(max_workers=num_checkers) as executor:
+                    missing_chunks = list(tqdm(
+                        executor.map(find_missing, chunks),
+                        total=len(chunks),
+                        desc='Checking missing cache',
+                    ))
+                missing = [i for chunk in missing_chunks for i in chunk]
 
             if missing:
                 # Define loader on the missing entries
@@ -143,11 +167,29 @@ class FeatureCacheMixin(CacheMixin, Generic[TDict, TFeature, TModel]):
                             ptr += 1
 
         # Read all features back in order
-        outputs = []
-        with env.begin() as txn:
-            for k in tqdm(keys, desc='Reading cache'):
-                val = txn.get(k.encode())
-                outputs.append(pickle.loads(val))
+        def read_entries(entries: list[str]) -> list[TDict]:
+            with env.begin() as txn:
+                return [pickle.loads(txn.get(k.encode())) for k in entries]
+
+        num_readers = max(1, min(max(self.num_workers, 1), len(keys)))
+        if num_readers == 1:
+            outputs = []
+            with env.begin() as txn:
+                for k in tqdm(keys, desc='Reading cache'):
+                    outputs.append(pickle.loads(txn.get(k.encode())))
+        else:
+            chunk_size = (len(keys) + num_readers - 1) // num_readers
+            chunks = [
+                keys[i:i + chunk_size]
+                for i in range(0, len(keys), chunk_size)
+            ]
+            with ThreadPoolExecutor(max_workers=num_readers) as executor:
+                chunk_outputs = list(tqdm(
+                    executor.map(read_entries, chunks),
+                    total=len(chunks),
+                    desc='Reading cache',
+                ))
+            outputs = [output for chunk in chunk_outputs for output in chunk]
 
         # Close the cache
         env.close()
