@@ -142,7 +142,7 @@ class MatchPairs:
                 shuffle=False,
             )
             
-            msg = f'Loading {len(dataset_pairs)} pairs ({self.__class__.__name__})'
+            msg = f'Processing {len(dataset_pairs)} pairs ({self.__class__.__name__})'
             # Compute from scratch
             empty_model_pairs = []
             error_info = ""

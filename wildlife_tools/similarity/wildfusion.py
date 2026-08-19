@@ -1,9 +1,13 @@
+import logging
 from collections.abc import Callable
 
 import numpy as np
 import torch
 
 from ..data import FeatureDataset, ImageDataset
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_hits(dataset0, dataset1):
@@ -156,6 +160,8 @@ class WildFusion:
         """
 
         for matcher in self.calibrated_pipelines:
+            pl_name = matcher.name if hasattr(matcher, "name") else matcher.__class__.__name__
+            logger.info(f"Fitting calibration for {pl_name}...")
             matcher.fit_calibration(dataset0, dataset1)
 
         if (self.priority_pipeline is not None) and (self.priority_pipeline.calibration is not None):
@@ -217,6 +223,8 @@ class WildFusion:
 
         scores = []
         for matcher in self.calibrated_pipelines:
+            pl_name = matcher.name if hasattr(matcher, "name") else matcher.__class__.__name__
+            logger.info(f"Computing scores for {pl_name}...")
             scores.append(matcher(dataset0, dataset1, pairs=pairs))
 
         score_combined = np.mean(scores, axis=0)
