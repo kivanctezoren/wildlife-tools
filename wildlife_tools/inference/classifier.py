@@ -1,16 +1,34 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+
 import numpy as np
 import pandas as pd
 import torch
 
-class KnnClassifier:
+
+class Classifier(ABC):
+    """Base interface for classifiers that predict labels from similarity matrices."""
+
+    @abstractmethod
+    def __call__(
+        self, similarity: np.ndarray
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray] | tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Predict labels from an ``n_query`` by ``n_database`` similarity matrix.
+
+        Implementations may also return prediction scores and database indices.
+        """
+        raise NotImplementedError
+
+
+class KnnClassifier(Classifier):
     """
     Predict query label as k labels of nearest matches in the database.
     If there is a tie at a given k, the prediction with the best score is used.
     """
 
-    def __init__(self, database_labels: np.ndarray, k: int = 1, return_scores: bool = False):
+    def __init__(self, database_labels: np.ndarray, k: int = 1, return_scores: bool = False,
+                 new_class_name: str | int | None = None, new_class_threshold: float | None = None):
         """
         Args:
             database_labels (np.ndarray): Array containing the labels of the database.
@@ -20,6 +38,13 @@ class KnnClassifier:
         self.k = k
         self.database_labels = database_labels
         self.return_scores = return_scores
+        self.new_class_name = new_class_name
+        self.new_class_threshold = new_class_threshold
+        if self.new_class_name is not None:
+            if self.new_class_threshold is None:
+                raise ValueError("If new_class_name is provided, new_class_threshold must also be provided.")
+            elif 0 < self.new_class_threshold < 1:
+                raise ValueError("new_class_threshold must be between 0 and 1.")
 
     def __call__(self, similarity: np.ndarray) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
@@ -74,12 +99,13 @@ class KnnClassifier:
             return preds
 
 
-class TopkClassifier:
+class TopkClassifier(Classifier):
     """
     Predict top k query labels given nearest matches in the database.
     """
 
-    def __init__(self, database_labels: np.ndarray, k: int = 10, return_all: bool = False):
+    def __init__(self, database_labels: np.ndarray, k: int = 10, return_all: bool = False,
+                 new_class_name: str | int | None = None, new_class_threshold: float | None = None):
         """
         Args:
             database_labels (np.ndarray): Array containing the labels of the database.
@@ -89,7 +115,14 @@ class TopkClassifier:
         self.k = k
         self.database_labels = database_labels
         self.return_all = return_all
-
+        self.new_class_name = new_class_name
+        self.new_class_threshold = new_class_threshold
+        if self.new_class_name is not None:
+            if self.new_class_threshold is None:
+                raise ValueError("If new_class_name is provided, new_class_threshold must also be provided.")
+            elif 0 < self.new_class_threshold < 1:
+                raise ValueError("new_class_threshold must be between 0 and 1.")
+        
     def __call__(self, similarity: np.ndarray, work_in_chunks = 0) -> np.ndarray | tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Predicts the top k labels for each query based on the similarity matrix.
