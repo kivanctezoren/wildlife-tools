@@ -34,16 +34,19 @@ class KnnClassifier(Classifier):
             database_labels (np.ndarray): Array containing the labels of the database.
             k (int, optional): The number of nearest neighbors to consider.
             return_scores (bool, optional): Indicates whether to return scores along with predictions.
+            new_class_name (str | int | None, optional): The label to assign to predictions below the threshold.
+            new_class_threshold (float | None, optional): The score threshold below which predictions are assigned the
+                new class label.
         """
         self.k = k
         self.database_labels = database_labels
         self.return_scores = return_scores
         self.new_class_name = new_class_name
         self.new_class_threshold = new_class_threshold
-        if self.new_class_name is not None:
-            if self.new_class_threshold is None:
-                raise ValueError("If new_class_name is provided, new_class_threshold must also be provided.")
-            elif 0 < self.new_class_threshold < 1:
+        if self.new_class_threshold is not None:
+            if self.new_class_name is None:
+                raise ValueError("If new_class_threshold is provided, new_class_name must also be provided.")
+            elif not 0 < self.new_class_threshold < 1:
                 raise ValueError("new_class_threshold must be between 0 and 1.")
 
     def __call__(self, similarity: np.ndarray) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
@@ -69,7 +72,7 @@ class KnnClassifier(Classifier):
         scores, idx = similarity.topk(k=self.k, dim=1)
         preds = self.database_labels[idx]
 
-        preds = np.array(preds)
+        preds = np.array(preds, dtype=object)
         scores = scores.numpy()
 
         # Aggregate k nearest neighbors
@@ -90,8 +93,12 @@ class KnnClassifier(Classifier):
             data.append([best_pred, best_score])
 
         preds, scores = list(zip(*data))
-        preds = np.array(preds)
+        preds = np.array(preds, dtype=object)
         scores = np.array(scores)
+
+        if self.new_class_threshold is not None:
+            # Assign new class label to predictions below the threshold
+            preds[scores < self.new_class_threshold] = self.new_class_name
 
         if self.return_scores:
             return preds, scores
@@ -111,16 +118,19 @@ class TopkClassifier(Classifier):
             database_labels (np.ndarray): Array containing the labels of the database.
             k (int): The number of top predictions to return.
             return_all (bool): Indicates whether to return scores along with predictions.
+            new_class_name (str | int | None, optional): The label to assign to predictions below the threshold.
+            new_class_threshold (float | None, optional): The score threshold below which predictions are assigned the
+                new class label.
         """
         self.k = k
         self.database_labels = database_labels
         self.return_all = return_all
         self.new_class_name = new_class_name
         self.new_class_threshold = new_class_threshold
-        if self.new_class_name is not None:
-            if self.new_class_threshold is None:
-                raise ValueError("If new_class_name is provided, new_class_threshold must also be provided.")
-            elif 0 < self.new_class_threshold < 1:
+        if self.new_class_threshold is not None:
+            if self.new_class_name is None:
+                raise ValueError("If new_class_threshold is provided, new_class_name must also be provided.")
+            elif not 0 < self.new_class_threshold < 1:
                 raise ValueError("new_class_threshold must be between 0 and 1.")
         
     def __call__(self, similarity: np.ndarray, work_in_chunks = 0) -> np.ndarray | tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -170,7 +180,7 @@ class TopkClassifier(Classifier):
                 data.append(list(zip(*data_row)))
 
             preds, scores, idx = list(zip(*data))
-            preds = np.array(preds)[:, : self.k]
+            preds = np.array(preds, dtype=object)[:, : self.k]
             scores = np.array(scores)[:, : self.k]
             idx = np.array(idx)[:, : self.k]
         else:
@@ -204,13 +214,17 @@ class TopkClassifier(Classifier):
                     data.append(list(zip(*data_row)))
 
                 tmp_preds, tmp_scores, tmp_idx = list(zip(*data))
-                tmp_preds = np.array(tmp_preds)[:, : self.k]
+                tmp_preds = np.array(tmp_preds, dtype=object)[:, : self.k]
                 tmp_scores = np.array(tmp_scores)[:, : self.k]
                 tmp_idx = np.array(tmp_idx)[:, : self.k]
 
                 scores[index_begin : index_end] = tmp_scores
                 idx[index_begin : index_end] = tmp_idx
                 preds[index_begin : index_end] = tmp_preds
+
+        if self.new_class_threshold is not None:
+            # Assign new class label to predictions below the threshold
+            preds[scores < self.new_class_threshold] = self.new_class_name
 
         if self.return_all:
             return preds, scores, idx
