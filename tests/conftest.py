@@ -6,10 +6,11 @@ import pandas as pd
 import pytest
 import timm
 import torchvision.transforms as T
+from transformers import AutoImageProcessor, AutoModel, CLIPModel, CLIPProcessor
 from wildlife_datasets import datasets
 
 from wildlife_tools.data import ImageDataset
-from wildlife_tools.features import DeepFeatures, SiftExtractor, SuperPointExtractor
+from wildlife_tools.features import ClipFeatures, DeepFeatures, DinoFeatures, SiftExtractor, SuperPointExtractor
 from wildlife_tools.similarity import CosineSimilarity, MatchLightGlue
 
 mp.set_start_method("spawn", force=True)
@@ -69,6 +70,20 @@ def extractor(backbone):
 def extractor_cached(backbone, cache_dir):
     cache_path = cache_dir / "features_deep.pkl"
     return DeepFeatures(backbone, cache_path=cache_path)
+
+
+@pytest.fixture(scope="session")
+def extractor_clip():
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").vision_model
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    return ClipFeatures(model=model, processor=processor)
+
+
+@pytest.fixture(scope="session")
+def extractor_dino():
+    model = AutoModel.from_pretrained("facebook/dinov2-small")
+    processor = AutoImageProcessor.from_pretrained("facebook/dinov2-small")
+    return DinoFeatures(model=model, processor=processor)
 
 
 @pytest.fixture(scope="session")
