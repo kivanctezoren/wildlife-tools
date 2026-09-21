@@ -106,6 +106,13 @@ class SuperPointExtractor(GlueFactoryExtractor):
         super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
                          num_workers=num_workers)
 
+    def __repr__(self) -> str:
+        return (
+            f"SuperPointExtractor(detection_threshold={self.model.detection_threshold},"
+            f" force_num_keypoints={self.model.force_num_keypoints},"
+            f" max_num_keypoints={self.model.max_num_keypoints})"
+        )
+
 
 class DiskExtractor(GlueFactoryExtractor):
     """
@@ -134,6 +141,13 @@ class DiskExtractor(GlueFactoryExtractor):
         } | model_config
         super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
                          num_workers=num_workers)
+
+    def __repr__(self) -> str:
+        return (
+            f"DiskExtractor(detection_threshold={self.model.detection_threshold},"
+            f" force_num_keypoints={self.model.force_num_keypoints},"
+            f" max_num_keypoints={self.model.max_num_keypoints})"
+        )
 
 
 class AlikedExtractor(GlueFactoryExtractor):
@@ -164,6 +178,13 @@ class AlikedExtractor(GlueFactoryExtractor):
         } | model_config
         super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
                          num_workers=num_workers)
+
+    def __repr__(self) -> str:
+        return (
+            f"AlikedExtractor(detection_threshold={self.model.detection_threshold},"
+            f" force_num_keypoints={self.model.force_num_keypoints},"
+            f" max_num_keypoints={self.model.max_num_keypoints})"
+        )
 
 
 class SiftExtractor(GlueFactoryExtractor):
@@ -199,3 +220,11 @@ class SiftExtractor(GlueFactoryExtractor):
         entry_new["scales"] = entry["scales"].clone().cpu()
         entry_new["oris"] = entry["oris"].clone().cpu()
         return entry_new
+
+    def __repr__(self) -> str:
+        return (
+            f"SiftExtractor(backend={self.model.backend},"
+            f" detection_threshold={self.model.detection_threshold},"
+            f" force_num_keypoints={self.model.force_num_keypoints},"
+            f" max_num_keypoints={self.model.max_num_keypoints})"
+        )

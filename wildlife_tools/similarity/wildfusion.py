@@ -225,3 +225,9 @@ class WildFusion:
         score_combined = np.mean(scores, axis=0)
         score_combined = np.where(np.isnan(score_combined), -np.inf, score_combined)
         return score_combined
+
+    def __repr__(self) -> str:
+        return (
+            f"WildFusion(calibrated_pipelines={[repr(p) for p in self.calibrated_pipelines]},"
+            f" priority_pipeline={repr(self.priority_pipeline)}, pair_selector={repr(self.pair_selector)})"
+        )

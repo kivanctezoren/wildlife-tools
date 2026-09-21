@@ -27,6 +27,9 @@ class CollectAll:
     def process_results(self):
         return self.data
 
+    def __repr__(self) -> str:
+        return "CollectAll()"
+
 
 class CollectCounts:
     """
@@ -75,6 +78,9 @@ class CollectCounts:
             return list(self.data.values())[0]
         else:
             return self.data
+
+    def __repr__(self) -> str:
+        return f"CollectCounts(grid_dtype={self.grid_dtype}, thresholds={self.thresholds})"
 
 
 class EmptyModelError(Exception):
@@ -167,3 +173,6 @@ class CollectCountsRansac(CollectCounts):
             raise EmptyModelError(
                 f"{error_info}", empty_model_pairs
             )
+
+    def __repr__(self):
+        return f"CollectCountsRansac(grid_dtype={self.grid_dtype}, config={self.config})"

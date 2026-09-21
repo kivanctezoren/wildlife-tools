@@ -37,6 +37,9 @@ class TopkPairSelector(PairSelector):
         grid_indices = np.stack([idx0.flatten(), idx1.flatten()]).T[idx_keep]
         return grid_indices
 
+    def __repr__(self) -> str:
+        return "TopkPairSelector()"
+
 
 class IgnoreMaskProvider(ABC):
     """Base class for strategies that compute a boolean ignore mask from two metadata frames."""
@@ -110,6 +113,12 @@ class MetadataIgnoreMask(IgnoreMaskProvider):
 
         return ignore_mask
 
+    def __repr__(self) -> str:
+        return (
+            f"MetadataIgnoreMask(cols_equal={self.cols_equal}, cols_unequal={self.cols_unequal},"
+            f" ignore_unknown={self.ignore_unknown})"
+        )
+
 
 class MaskedPairSelector(PairSelector):
     """Wraps a PairSelector, masking out ignored pairs before delegating to it."""
@@ -140,3 +149,6 @@ class MaskedPairSelector(PairSelector):
             return self.pair_selector(similarity_priority, dataset0, dataset1, B)
         finally:
             similarity_priority[ignore_mask] = original_values
+
+    def __repr__(self) -> str:
+        return f"MaskedPairSelector(pair_selector={repr(self.pair_selector)}, mask_provider={repr(self.mask_provider)})"

@@ -67,6 +67,9 @@ class LogisticCalibration(Calibration):
 
         return self.model.predict_proba(np.atleast_2d(scores).T)[:, 1]
 
+    def __repr__(self):
+        return "LogisticCalibration()"
+
 
 class IsotonicCalibration(Calibration):
     """
@@ -142,6 +145,12 @@ class IsotonicCalibration(Calibration):
             y = y + x * np.finfo(np.float64 if self.high_precision else np.float32).eps
 
         return y
+
+    def __repr__(self):
+        return (
+            f"IsotonicCalibration(interpolate={self.interpolate}, strict={self.strict},"
+            f" high_precision={self.high_precision})"
+        )
 
 
 def reliability_diagram(
