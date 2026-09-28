@@ -96,21 +96,21 @@ class SuperPointExtractor(GlueFactoryExtractor):
         num_workers: int = 1,
         **model_config,
     ):
-        config = {
+        self.config = {
             "name": "gluefactory_nonfree.superpoint",
             "nms_radius": 3,
             "detection_threshold": detection_threshold,
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
+        super().__init__(self.config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
                          num_workers=num_workers)
 
     def __repr__(self) -> str:
         return (
-            f"SuperPointExtractor(detection_threshold={self.model.detection_threshold},"
-            f" force_num_keypoints={self.model.force_num_keypoints},"
-            f" max_num_keypoints={self.model.max_num_keypoints})"
+            f"SuperPointExtractor(detection_threshold={self.config['detection_threshold']},"
+            f" force_num_keypoints={self.config['force_num_keypoints']},"
+            f" max_num_keypoints={self.config['max_num_keypoints']})"
         )
 
 
@@ -133,20 +133,20 @@ class DiskExtractor(GlueFactoryExtractor):
         num_workers: int = 1,
         **model_config,
     ):
-        config = {
+        self.config = {
             "name": "extractors.disk_kornia",
             "detection_threshold": detection_threshold,
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
+        super().__init__(self.config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
                          num_workers=num_workers)
 
     def __repr__(self) -> str:
         return (
-            f"DiskExtractor(detection_threshold={self.model.detection_threshold},"
-            f" force_num_keypoints={self.model.force_num_keypoints},"
-            f" max_num_keypoints={self.model.max_num_keypoints})"
+            f"DiskExtractor(detection_threshold={self.config['detection_threshold']},"
+            f" force_num_keypoints={self.config['force_num_keypoints']},"
+            f" max_num_keypoints={self.config['max_num_keypoints']})"
         )
 
 
@@ -169,21 +169,20 @@ class AlikedExtractor(GlueFactoryExtractor):
         num_workers: int = 1,
         **model_config,
     ):
-
-        config = {
+        self.config = {
             "name": "extractors.aliked",
             "detection_threshold": detection_threshold,
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
+        super().__init__(self.config, device=device, cache_path=cache_path, skip_cache_check=skip_cache_check,
                          num_workers=num_workers)
 
     def __repr__(self) -> str:
         return (
-            f"AlikedExtractor(detection_threshold={self.model.detection_threshold},"
-            f" force_num_keypoints={self.model.force_num_keypoints},"
-            f" max_num_keypoints={self.model.max_num_keypoints})"
+            f"AlikedExtractor(detection_threshold={self.config['detection_threshold']},"
+            f" force_num_keypoints={self.config['force_num_keypoints']},"
+            f" max_num_keypoints={self.config['max_num_keypoints']})"
         )
 
 
@@ -203,14 +202,15 @@ class SiftExtractor(GlueFactoryExtractor):
         **model_config,
     ):
 
-        config = {
+        self.config = {
             "name": "extractors.sift",
             "backend": backend,
             "detection_threshold": detection_threshold,
             "force_num_keypoints": force_num_keypoints,
             "max_num_keypoints": max_num_keypoints,
         } | model_config
-        super().__init__(config, cache_path=cache_path, device=device, skip_cache_check=skip_cache_check, num_workers=num_workers)
+        super().__init__(self.config, cache_path=cache_path, device=device, skip_cache_check=skip_cache_check,
+                         num_workers=num_workers)
 
         # Fix extract_single_image method.
         self.model.extract_single_image = types.MethodType(extract_single_image_fix, self.model)
@@ -223,8 +223,8 @@ class SiftExtractor(GlueFactoryExtractor):
 
     def __repr__(self) -> str:
         return (
-            f"SiftExtractor(backend={self.model.backend},"
-            f" detection_threshold={self.model.detection_threshold},"
-            f" force_num_keypoints={self.model.force_num_keypoints},"
-            f" max_num_keypoints={self.model.max_num_keypoints})"
+            f"SiftExtractor(backend={self.config['backend']},"
+            f" detection_threshold={self.config['detection_threshold']},"
+            f" force_num_keypoints={self.config['force_num_keypoints']},"
+            f" max_num_keypoints={self.config['max_num_keypoints']})"
         )
